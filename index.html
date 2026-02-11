@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>ATELIER — расписание</title>
+
+<style>
+body {
+  margin: 0;
+  padding: 48px;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #fff;
+  color: #000;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+/* ---------- TOP BLOCK ---------- */
+.top {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.clock {
+  font-size: 48px;
+  font-weight: bold;
+  color: #2a6fff;
+}
+
+.date {
+  margin-top: 6px;
+  font-size: 22px;
+  color: #555;
+}
+
+.weekday {
+  margin-top: 4px;
+  font-size: 18px;
+  letter-spacing: 1px;
+  color: #777;
+}
+
+/* loading bar */
+.loading-wrapper {
+  width: 160px;
+  height: 3px;
+  background: #eee;
+  margin: 10px auto 0;
+  overflow: hidden;
+}
+
+.loading-bar {
+  height: 100%;
+  width: 0%;
+  background: #2a6fff;
+  transition: width 0.2s linear;
+}
+
+h1 {
+  text-align: center;
+  font-size: 64px;
+  margin-bottom: 64px;
+}
+
+/* ---------- SCHEDULE ---------- */
+#schedule {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 40vh;
+}
+
+.event {
+  padding: 16px 0;
+  border-bottom: 1px solid #eee;
+  font-size: 28px;
+  line-height: 1.2em;
+}
+
+.past { color: #999; }
+.current { color: #2a6fff; font-weight: bold; }
+.future { color: #000; }
+
+.time {
+  display: block;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.title {
+  display: block;
+  margin-top: 4px;
+  word-break: break-word;
+}
+
+.description {
+  display: block;
+  margin-top: 2px;
+  font-size: 20px;
+  word-break: break-word;
+}
+
+/* logo as last element */
+.logo-event {
+  margin-top: auto;
+  padding-top: 48px;
+  display: flex;
+  justify-content: center;
+}
+
+.logo-event img {
+  width: 160px;
+  opacity: 0.9;
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+</head>
+
+<body>
+
+<div class="top">
+  <div class="clock" id="clock"></div>
+  <div class="date" id="date"></div>
+  <div class="weekday" id="weekday"></div>
+  <div class="loading-wrapper">
+    <div class="loading-bar" id="loadingBar"></div>
+  </div>
+</div>
+
+<h1 id="mainTitle">АТЕЛЬЕ</h1>
+
+<div id="schedule"></div>
+
+<script>
+/* ---------------- SETTINGS ---------------- */
+const CSV_URL =
+'https://docs.google.com/spreadsheets/d/e/2PACX-1vQee6a09CH-f8xFDnzJ_spSya54WRIyYi3XFBH8S65pKehx1YM7c_P4GFC_83BhY5QLk4Q4eQCOxYQT/pub?output=csv';
+
+const LANGS = ['ru','kz','en'];
+let currentLangIndex = 0;
+let eventsData = [];
+
+const LANG_INTERVAL = 10000; // 10 секунд
+let langStartTime = Date.now();
+
+/* ---------------- QUOTES REMOVAL ---------------- */
+const REMOVE_QUOTES = true; // включаем удаление стандартных кавычек ""
+
+/* ---------------- WEEKDAYS ---------------- */
+const WEEKDAYS = {
+  ru: ['ВОСКРЕСЕНЬЕ','ПОНЕДЕЛЬНИК','ВТОРНИК','СРЕДА','ЧЕТВЕРГ','ПЯТНИЦА','СУББОТА'],
+  kz: ['ЖЕКСЕНБІ','ДҮЙСЕНБІ','СЕЙСЕНБІ','СӘРСЕНБІ','БЕЙСЕНБІ','ЖҰМА','СЕНБІ'],
+  en: ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY']
+};
+
+/* ---------------- LANGUAGE HELPERS ---------------- */
+function getLang() {
+  return LANGS[currentLangIndex];
+}
+
+function switchLanguage() {
+  currentLangIndex = (currentLangIndex + 1) % LANGS.length;
+  langStartTime = Date.now();
+  render(eventsData);
+  updateClockAndDate();
+}
+
+/* ---------------- CLOCK & DATE ---------------- */
+function updateClockAndDate() {
+  const now = new Date();
+  const lang = getLang();
+
+  // TIME
+  if (lang === 'en') {
+    document.getElementById('clock').textContent =
+      now.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+  } else {
+    document.getElementById('clock').textContent =
+      now.toLocaleTimeString('ru-RU', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+  }
+
+  // DATE always DD.MM.YYYY
+  const day = String(now.getDate()).padStart(2,'0');
+  const month = String(now.getMonth()+1).padStart(2,'0');
+  const year = now.getFullYear();
+  document.getElementById('date').textContent = `${day}.${month}.${year}`;
+
+  // WEEKDAY uppercase (explicit)
+  const weekday = WEEKDAYS[lang][now.getDay()];
+  document.getElementById('weekday').textContent = weekday;
+
+  // TITLE
+  const titleMap = {
+    ru: 'АТЕЛЬЕ',
+    kz: 'ATELE',
+    en: 'ATELIER'
+  };
+  document.getElementById('mainTitle').textContent = titleMap[lang];
+
+  updateLoadingBar();
+}
+
+/* ---------------- LOADING BAR ---------------- */
+function updateLoadingBar() {
+  const progress = (Date.now() - langStartTime) / LANG_INTERVAL;
+  const percent = Math.min(progress * 100, 100);
+  document.getElementById('loadingBar').style.width = percent + '%';
+}
+
+/* ---------------- CSV ---------------- */
+function parseCSV(text) {
+  const result = Papa.parse(text, { header: true, skipEmptyLines: true });
+  let data = result.data;
+
+  if (REMOVE_QUOTES) {
+    data = data.map(row => {
+      const obj = {};
+      Object.keys(row).forEach(k => {
+        let val = row[k] || '';
+        if (val.startsWith('"') && val.endsWith('"')) {
+          val = val.slice(1, -1); // убираем только стандартные кавычки "
+        }
+        obj[k] = val;
+      });
+      return obj;
+    });
+  }
+
+  return data;
+}
+
+/* ---------------- RENDER ---------------- */
+function render(events) {
+
+  eventsData = events;
+
+  const container = document.getElementById('schedule');
+  container.innerHTML = '';
+
+  const now = new Date();
+  const day = String(now.getDate()).padStart(2,'0');
+  const month = String(now.getMonth()+1).padStart(2,'0');
+  const year = now.getFullYear();
+  const todayStr = `${day}.${month}.${year}`;
+
+  const lang = getLang();
+
+  const todays = events.filter(e => e.date === todayStr);
+
+  todays.forEach(e => {
+
+    const [hStart, mStart] = e.start.split(':').map(Number);
+    const [hEnd, mEnd] = e.end.split(':').map(Number);
+
+    let start, end;
+    start = new Date(year, now.getMonth(), now.getDate(), hStart, mStart);
+    end   = new Date(year, now.getMonth(), now.getDate(), hEnd, mEnd);
+
+    let cls = 'future';
+    if (end < now) cls = 'past';
+    else if (start <= now && now <= end) cls = 'current';
+
+    const titleKeyMap = { ru: 'title ru', kz: 'title kz', en: 'title en' };
+    const descKeyMap  = { ru: 'description ru', kz: 'description kz', en: 'description en' };
+
+    let startStr = e.start;
+    let endStr   = e.end;
+
+    if (lang === 'en') {
+      // конвертируем в AM/PM
+      const formatTime = (h,m) => {
+        const date = new Date(0,0,0,h,m);
+        return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+      };
+      startStr = formatTime(hStart,mStart);
+      endStr   = formatTime(hEnd,mEnd);
+    }
+
+    const div = document.createElement('div');
+    div.className = `event ${cls}`;
+    div.innerHTML = `
+      <span class="time">${startStr}–${endStr}</span>
+      <span class="title">${e[titleKeyMap[lang]] || ''}</span>
+      <span class="description">${e[descKeyMap[lang]] || ''}</span>
+    `;
+    container.appendChild(div);
+  });
+
+  const logo = document.createElement('div');
+  logo.className = 'logo-event';
+  logo.innerHTML = `<img src="logo.png" alt="Atelier Logo">`;
+  container.appendChild(logo);
+}
+
+/* ---------------- LOAD ---------------- */
+function loadSchedule() {
+  fetch(CSV_URL + '&t=' + Date.now(), { cache: 'no-store' })
+    .then(r => r.text())
+    .then(text => {
+      eventsData = parseCSV(text);
+      render(eventsData);
+    })
+    .catch(() => {
+      document.getElementById('schedule').textContent = 'Ошибка загрузки расписания';
+    });
+}
+
+loadSchedule();
+setInterval(loadSchedule, 10000);
+setInterval(updateClockAndDate, 1000);
+setInterval(switchLanguage, LANG_INTERVAL);
+
+</script>
+
+</body>
+</html>
