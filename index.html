@@ -13,6 +13,11 @@ body {
   color: #000;
   min-height: 100vh;
   box-sizing: border-box;
+  transition: opacity 0.4s ease;
+}
+
+body.fade {
+  opacity: 0;
 }
 
 /* ---------- TOP BLOCK ---------- */
@@ -53,9 +58,9 @@ body {
   height: 100%;
   width: 0%;
   background: #2a6fff;
-  transition: width 0.2s linear;
 }
 
+/* ---------- TITLE ---------- */
 h1 {
   text-align: center;
   font-size: 64px;
@@ -101,7 +106,7 @@ h1 {
   word-break: break-word;
 }
 
-/* logo as last element */
+/* logo */
 .logo-event {
   margin-top: auto;
   padding-top: 48px;
@@ -130,10 +135,10 @@ h1 {
 </div>
 
 <h1 id="mainTitle">АТЕЛЬЕ</h1>
-
 <div id="schedule"></div>
 
 <script>
+
 /* ---------------- SETTINGS ---------------- */
 const CSV_URL =
 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQee6a09CH-f8xFDnzJ_spSya54WRIyYi3XFBH8S65pKehx1YM7c_P4GFC_83BhY5QLk4Q4eQCOxYQT/pub?output=csv';
@@ -142,11 +147,11 @@ const LANGS = ['ru','kz','en'];
 let currentLangIndex = 0;
 let eventsData = [];
 
-const LANG_INTERVAL = 10000; // 10 секунд
+const LANG_INTERVAL = 10000;
 let langStartTime = Date.now();
 
-/* ---------------- QUOTES REMOVAL ---------------- */
-const REMOVE_QUOTES = true; // включаем удаление стандартных кавычек ""
+/* ---------------- QUOTES ---------------- */
+const REMOVE_QUOTES = true;
 
 /* ---------------- WEEKDAYS ---------------- */
 const WEEKDAYS = {
@@ -155,66 +160,55 @@ const WEEKDAYS = {
   en: ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY']
 };
 
-/* ---------------- LANGUAGE HELPERS ---------------- */
+/* ---------------- LANGUAGE ---------------- */
 function getLang() {
   return LANGS[currentLangIndex];
 }
 
 function switchLanguage() {
-  currentLangIndex = (currentLangIndex + 1) % LANGS.length;
-  langStartTime = Date.now();
-  render(eventsData);
-  updateClockAndDate();
+
+  document.body.classList.add('fade');
+
+  setTimeout(() => {
+    currentLangIndex = (currentLangIndex + 1) % LANGS.length;
+    langStartTime = Date.now();
+    render(eventsData);
+    updateClockAndDate();
+    document.body.classList.remove('fade');
+  }, 400);
 }
 
-/* ---------------- CLOCK & DATE ---------------- */
+/* ---------------- CLOCK ---------------- */
 function updateClockAndDate() {
   const now = new Date();
   const lang = getLang();
 
-  // TIME
   if (lang === 'en') {
     document.getElementById('clock').textContent =
-      now.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      });
+      now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
   } else {
     document.getElementById('clock').textContent =
-      now.toLocaleTimeString('ru-RU', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-      });
+      now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', hour12: false });
   }
 
-  // DATE always DD.MM.YYYY
   const day = String(now.getDate()).padStart(2,'0');
   const month = String(now.getMonth()+1).padStart(2,'0');
   const year = now.getFullYear();
   document.getElementById('date').textContent = `${day}.${month}.${year}`;
 
-  // WEEKDAY uppercase (explicit)
-  const weekday = WEEKDAYS[lang][now.getDay()];
-  document.getElementById('weekday').textContent = weekday;
+  document.getElementById('weekday').textContent =
+    WEEKDAYS[lang][now.getDay()];
 
-  // TITLE
-  const titleMap = {
-    ru: 'АТЕЛЬЕ',
-    kz: 'ATELE',
-    en: 'ATELIER'
-  };
+  const titleMap = { ru: 'АТЕЛЬЕ', kz: 'ATELE', en: 'ATELIER' };
   document.getElementById('mainTitle').textContent = titleMap[lang];
-
-  updateLoadingBar();
 }
 
-/* ---------------- LOADING BAR ---------------- */
-function updateLoadingBar() {
+/* ---------------- SMOOTH LOADING BAR ---------------- */
+function animateLoadingBar() {
   const progress = (Date.now() - langStartTime) / LANG_INTERVAL;
-  const percent = Math.min(progress * 100, 100);
+  const percent = (progress % 1) * 100;
   document.getElementById('loadingBar').style.width = percent + '%';
+  requestAnimationFrame(animateLoadingBar);
 }
 
 /* ---------------- CSV ---------------- */
@@ -228,7 +222,7 @@ function parseCSV(text) {
       Object.keys(row).forEach(k => {
         let val = row[k] || '';
         if (val.startsWith('"') && val.endsWith('"')) {
-          val = val.slice(1, -1); // убираем только стандартные кавычки "
+          val = val.slice(1, -1);
         }
         obj[k] = val;
       });
@@ -254,7 +248,6 @@ function render(events) {
   const todayStr = `${day}.${month}.${year}`;
 
   const lang = getLang();
-
   const todays = events.filter(e => e.date === todayStr);
 
   todays.forEach(e => {
@@ -262,9 +255,8 @@ function render(events) {
     const [hStart, mStart] = e.start.split(':').map(Number);
     const [hEnd, mEnd] = e.end.split(':').map(Number);
 
-    let start, end;
-    start = new Date(year, now.getMonth(), now.getDate(), hStart, mStart);
-    end   = new Date(year, now.getMonth(), now.getDate(), hEnd, mEnd);
+    let start = new Date(year, now.getMonth(), now.getDate(), hStart, mStart);
+    let end   = new Date(year, now.getMonth(), now.getDate(), hEnd, mEnd);
 
     let cls = 'future';
     if (end < now) cls = 'past';
@@ -277,10 +269,9 @@ function render(events) {
     let endStr   = e.end;
 
     if (lang === 'en') {
-      // конвертируем в AM/PM
       const formatTime = (h,m) => {
         const date = new Date(0,0,0,h,m);
-        return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+        return date.toLocaleTimeString('en-US',{ hour:'2-digit',minute:'2-digit',hour12:true });
       };
       startStr = formatTime(hStart,mStart);
       endStr   = formatTime(hEnd,mEnd);
@@ -309,9 +300,6 @@ function loadSchedule() {
     .then(text => {
       eventsData = parseCSV(text);
       render(eventsData);
-    })
-    .catch(() => {
-      document.getElementById('schedule').textContent = 'Ошибка загрузки расписания';
     });
 }
 
@@ -319,6 +307,7 @@ loadSchedule();
 setInterval(loadSchedule, 10000);
 setInterval(updateClockAndDate, 1000);
 setInterval(switchLanguage, LANG_INTERVAL);
+requestAnimationFrame(animateLoadingBar);
 
 </script>
 
