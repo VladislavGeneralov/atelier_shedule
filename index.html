@@ -9,14 +9,18 @@ body {
   margin: 0;
   padding: 48px;
   font-family: Arial, Helvetica, sans-serif;
-  background: #fff;
-  color: #000;
   min-height: 100vh;
   box-sizing: border-box;
+  background: url('back.jpg') center/cover no-repeat; /* фон */
+  color: #000;
+}
+
+/* контейнер для всего контента, чтобы fade не трогал фон */
+#content {
   transition: opacity 0.4s ease;
 }
 
-body.fade {
+#content.fade {
   opacity: 0;
 }
 
@@ -125,17 +129,19 @@ h1 {
 
 <body>
 
-<div class="top">
-  <div class="clock" id="clock"></div>
-  <div class="date" id="date"></div>
-  <div class="weekday" id="weekday"></div>
-  <div class="loading-wrapper">
-    <div class="loading-bar" id="loadingBar"></div>
+<div id="content">
+  <div class="top">
+    <div class="clock" id="clock"></div>
+    <div class="date" id="date"></div>
+    <div class="weekday" id="weekday"></div>
+    <div class="loading-wrapper">
+      <div class="loading-bar" id="loadingBar"></div>
+    </div>
   </div>
-</div>
 
-<h1 id="mainTitle">АТЕЛЬЕ</h1>
-<div id="schedule"></div>
+  <h1 id="mainTitle">АТЕЛЬЕ</h1>
+  <div id="schedule"></div>
+</div>
 
 <script>
 
@@ -166,15 +172,15 @@ function getLang() {
 }
 
 function switchLanguage() {
-
-  document.body.classList.add('fade');
+  const content = document.getElementById('content');
+  content.classList.add('fade');
 
   setTimeout(() => {
     currentLangIndex = (currentLangIndex + 1) % LANGS.length;
     langStartTime = Date.now();
     render(eventsData);
     updateClockAndDate();
-    document.body.classList.remove('fade');
+    content.classList.remove('fade');
   }, 400);
 }
 
