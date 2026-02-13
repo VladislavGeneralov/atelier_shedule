@@ -12,8 +12,8 @@
   --main-blue: #0103FF;
   --main-gray: #666666;
 
-  --round: 19px;          /* степень скругления */
-  --glass: 0.2;          /* прозрачность плашки */
+  --round: 19px;
+  --glass: 0.2;
 }
 
 body {
@@ -34,7 +34,7 @@ body.fade {
 /* ---------- TOP BLOCK ---------- */
 .top {
   text-align: center;
-  margin-bottom: 34px;
+  margin-bottom: 26px; /* было 34 */
 }
 
 .clock {
@@ -43,17 +43,31 @@ body.fade {
   color: var(--main-blue);
 }
 
-.date {
+/* дата и день недели в одну строку */
+.date-weekday {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
   margin-top: 6px;
+  align-items: baseline;
+}
+
+.date {
   font-size: 22px;
   color: var(--main-gray);
+  margin: 0;
+}
+
+.weekday::before {
+  content: "| ";
+  margin: 0 10px;
 }
 
 .weekday {
-  margin-top: 4px;
-  font-size: 18px;
+  font-size: 22px;
   letter-spacing: 1px;
   color: var(--main-gray);
+  margin: 0;
 }
 
 /* loading bar */
@@ -61,7 +75,7 @@ body.fade {
   width: 160px;
   height: 3px;
   background: #eee;
-  margin: 10px auto 0;
+  margin: 8px auto 0; /* было 10 */
   overflow: hidden;
 }
 
@@ -75,7 +89,8 @@ body.fade {
 h1 {
   text-align: center;
   font-size: 64px;
-  margin-bottom: 40px;
+  margin-top: 10px;     /* добавлено */
+  margin-bottom: 24px;  /* было 40 */
 }
 
 /* ---------- SCHEDULE ---------- */
@@ -88,8 +103,8 @@ h1 {
 }
 
 .event {
-  padding: 20px 24px;
-  margin-bottom: 16px;
+  padding: 14px 18px;   /* было 20px 24px */
+  margin-bottom: 10px;  /* было 16px */
 
   font-size: 28px;
   line-height: 1.2em;
@@ -129,7 +144,7 @@ h1 {
 /* logo */
 .logo-event {
   margin-top: auto;
-  padding-top: 48px;
+  padding-top: 40px; /* немного уменьшил */
   display: flex;
   justify-content: center;
 }
@@ -147,8 +162,13 @@ h1 {
 
 <div class="top">
   <div class="clock" id="clock"></div>
-  <div class="date" id="date"></div>
-  <div class="weekday" id="weekday"></div>
+
+  <!-- объединённая строка -->
+  <div class="date-weekday">
+    <div class="date" id="date"></div>
+    <div class="weekday" id="weekday"></div>
+  </div>
+
   <div class="loading-wrapper">
     <div class="loading-bar" id="loadingBar"></div>
   </div>
@@ -186,7 +206,6 @@ function getLang() {
 }
 
 function switchLanguage() {
-
   document.body.classList.add('fade');
 
   setTimeout(() => {
@@ -223,7 +242,8 @@ function updateClockAndDate() {
   document.getElementById('mainTitle').textContent = titleMap[lang];
 }
 
-/* ---------------- SMOOTH LOADING BAR ---------------- */
+/* остальной JS полностью без изменений */
+
 function animateLoadingBar() {
   const progress = (Date.now() - langStartTime) / LANG_INTERVAL;
   const percent = (progress % 1) * 100;
@@ -231,7 +251,6 @@ function animateLoadingBar() {
   requestAnimationFrame(animateLoadingBar);
 }
 
-/* ---------------- CSV ---------------- */
 function parseCSV(text) {
   const result = Papa.parse(text, { header: true, skipEmptyLines: true });
   let data = result.data;
@@ -253,7 +272,6 @@ function parseCSV(text) {
   return data;
 }
 
-/* ---------------- RENDER ---------------- */
 function render(events) {
 
   eventsData = events;
@@ -313,7 +331,6 @@ function render(events) {
   container.appendChild(logo);
 }
 
-/* ---------------- LOAD ---------------- */
 function loadSchedule() {
   fetch(CSV_URL + '&t=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
