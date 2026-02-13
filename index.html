@@ -5,22 +5,23 @@
 <title>ATELIER — расписание</title>
 
 <style>
+:root {
+  --main-blue: #574DA8; /* основной синий цвет */
+  --main-gray: #4D4D4D; /* основной серый цвет */
+}
+
 body {
   margin: 0;
   padding: 48px;
   font-family: Arial, Helvetica, sans-serif;
-  min-height: 100vh;
-  box-sizing: border-box;
   background: url('back.jpg') center/cover no-repeat; /* фон */
   color: #000;
-}
-
-/* контейнер для всего контента, чтобы fade не трогал фон */
-#content {
+  min-height: 100vh;
+  box-sizing: border-box;
   transition: opacity 0.4s ease;
 }
 
-#content.fade {
+body.fade {
   opacity: 0;
 }
 
@@ -33,20 +34,20 @@ body {
 .clock {
   font-size: 48px;
   font-weight: bold;
-  color: #2a6fff;
+  color: var(--main-blue); /* синий через переменную */
 }
 
 .date {
   margin-top: 6px;
   font-size: 22px;
-  color: #555;
+  color: var(--main-gray); /* серый через переменную */
 }
 
 .weekday {
   margin-top: 4px;
   font-size: 18px;
   letter-spacing: 1px;
-  color: #777;
+  color: var(--main-gray); /* серый через переменную */
 }
 
 /* loading bar */
@@ -61,7 +62,7 @@ body {
 .loading-bar {
   height: 100%;
   width: 0%;
-  background: #2a6fff;
+  background: var(--main-blue); /* синий через переменную */
 }
 
 /* ---------- TITLE ---------- */
@@ -87,8 +88,8 @@ h1 {
   line-height: 1.2em;
 }
 
-.past { color: #999; }
-.current { color: #2a6fff; font-weight: bold; }
+.past { color: var(--main-gray); } /* серый через переменную */
+.current { color: var(--main-blue); font-weight: bold; } /* синий через переменную */
 .future { color: #000; }
 
 .time {
@@ -129,19 +130,17 @@ h1 {
 
 <body>
 
-<div id="content">
-  <div class="top">
-    <div class="clock" id="clock"></div>
-    <div class="date" id="date"></div>
-    <div class="weekday" id="weekday"></div>
-    <div class="loading-wrapper">
-      <div class="loading-bar" id="loadingBar"></div>
-    </div>
+<div class="top">
+  <div class="clock" id="clock"></div>
+  <div class="date" id="date"></div>
+  <div class="weekday" id="weekday"></div>
+  <div class="loading-wrapper">
+    <div class="loading-bar" id="loadingBar"></div>
   </div>
-
-  <h1 id="mainTitle">АТЕЛЬЕ</h1>
-  <div id="schedule"></div>
 </div>
+
+<h1 id="mainTitle">АТЕЛЬЕ</h1>
+<div id="schedule"></div>
 
 <script>
 
@@ -172,15 +171,15 @@ function getLang() {
 }
 
 function switchLanguage() {
-  const content = document.getElementById('content');
-  content.classList.add('fade');
+
+  document.body.classList.add('fade');
 
   setTimeout(() => {
     currentLangIndex = (currentLangIndex + 1) % LANGS.length;
     langStartTime = Date.now();
     render(eventsData);
     updateClockAndDate();
-    content.classList.remove('fade');
+    document.body.classList.remove('fade');
   }, 400);
 }
 
